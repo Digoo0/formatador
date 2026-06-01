@@ -67,6 +67,11 @@
             outline: 2px solid transparent;
             background-color: #fff;
         }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
         button.main-btn {
             background-color: #2271b1;
             color: #fff;
@@ -76,11 +81,24 @@
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
-            margin-top: 15px;
             transition: background 0.2s;
         }
         button.main-btn:hover {
             background-color: #135e96;
+        }
+        button.clear-btn {
+            background-color: #d63638;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.clear-btn:hover {
+            background-color: #b32d2f;
         }
         .result-container {
             margin-top: 30px;
@@ -139,7 +157,10 @@
     
     <textarea id="inputText" placeholder="Cole o texto bruto aqui..."></textarea>
     
-    <button class="main-btn" onclick="processar()">Processar e Formatar</button>
+    <div class="action-buttons">
+        <button class="main-btn" onclick="processar()">Processar e Formatar</button>
+        <button class="clear-btn" onclick="limparTudo()">Limpar Texto</button>
+    </div>
 
     <div class="result-container" id="resultSection" style="display: none;">
         <div class="result-header">
@@ -179,6 +200,13 @@ function processar() {
     }
 }
 
+function limparTudo() {
+    document.getElementById('inputText').value = '';
+    document.getElementById('output').innerHTML = '';
+    document.getElementById('resultSection').style.display = 'none';
+    document.getElementById('inputText').focus();
+}
+
 function formatarWP() {
     const rawText = document.getElementById('inputText').value;
     if (!rawText.trim()) return;
@@ -206,7 +234,6 @@ function formatarWP() {
         }
     }
 
-    // Fallback simples
     if (items.length === 0) {
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].includes('versão') && lines[i].includes('instalada') && i > 0) {
@@ -226,30 +253,22 @@ function extrairNomes() {
     const rawText = document.getElementById('inputText').value;
     if (!rawText.trim()) return;
 
-    // Lista de termos comuns que o script deve ignorar para não achar que são nomes de quartos/produtos
     const termosIgnorar = [
         'reserve', 'saiba mais', 'ver mais', 'conheça', 'aberto todos os dias', 'das ', 'a partir de', 
         'site oficial', 'viva um dia', 'com um menu', 'ambiente', 'garanta sua', 'café da manhã', 
-        'brunch', 'todos os pavilhões', 'até as', 'pavilhão', 'centro de', 'gramado', 'anfiteatro', 'localizado no'
+        'brunch', 'todos os pavilions', 'todos os pavilhões', 'até as', 'pavilhão', 'centro de', 'gramado', 'anfiteatro', 'localizado no'
     ];
 
-    // Quebra o texto por quebras de linha e limpa linhas em branco
     const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     let nomesValidos = [];
 
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i];
-
-        // Regras para ser considerado um título legítimo:
-        // 1. Não pode ser muito longo (títulos geralmente têm menos de 50 caracteres)
-        // 2. Não pode conter ou começar com termos comuns de descrição/botões
-        // 3. Não pode ser apenas números ou datas (ex: 08/06 ou 2026 isolado)
         
         let deveIgnorar = termosIgnorar.some(termo => line.toLowerCase().includes(termo));
         let ehDataOuNumero = /^\d+[\/\d]*$/.test(line) || line.toLowerCase().startsWith('até ');
 
         if (line.length < 55 && !deveIgnorar && !ehDataOuNumero) {
-            // Se a linha anterior estava vazia no texto original, ou se é a primeira linha, a chance de ser título é enorme
             if (!nomesValidos.includes(line)) {
                 nomesValidos.push(line);
             }
