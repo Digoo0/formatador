@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formatador & Extrator de Conteúdo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 24px;
+            color: #1d2327;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f1;
+            padding-bottom: 10px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            background: #e0e0e0;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            color: #50575e;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: #2271b1;
+            color: #fff;
+        }
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 12px;
+            border: 1px solid #8c8f94;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            background-color: #fafafa;
+        }
+        textarea:focus {
+            border-color: #2271b1;
+            outline: 2px solid transparent;
+            background-color: #fff;
+        }
+        button.main-btn {
+            background-color: #2271b1;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        button.main-btn:hover {
+            background-color: #135e96;
+        }
+        .result-container {
+            margin-top: 30px;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 18px;
+            margin: 0;
+            color: #1d2327;
+        }
+        .btn-copy {
+            background-color: #646970;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-copy:hover {
+            background-color: #4c5156;
+        }
+        #output {
+            background: #f6f7f7;
+            border-left: 4px solid #2271b1;
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            min-height: 100px;
+        }
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Formatador de Conteúdo Multiuso</h1>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('wp')">Atualizações WP</button>
+        <button class="tab-btn" onclick="switchTab('names')">Extrair Nomes (Quartos/Eventos)</button>
+    </div>
+    
+    <p id="instruction" style="color: #646970; margin-bottom: 20px;">Cole o texto bruto da tela de atualizações do WordPress:</p>
+    
+    <textarea id="inputText" placeholder="Cole o texto bruto aqui..."></textarea>
+    
+    <button class="main-btn" onclick="processar()">Processar e Formatar</button>
+
+    <div class="result-container" id="resultSection" style="display: none;">
+        <div class="result-header">
+            <h2>Resultado:</h2>
+            <button class="btn-copy" onclick="copiarTexto()">Copiar Lista</button>
+        </div>
+        <div id="output"></div>
+    </div>
+</div>
+
+<script>
+let currentMode = 'wp';
+
+function switchTab(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    const instr = document.getElementById('instruction');
+    const txtArea = document.getElementById('inputText');
+    
+    if(mode === 'wp') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        instr.innerText = "Cole o texto bruto da tela de atualizações do WordPress:";
+        txtArea.placeholder = "Advanced Custom Fields\nVocê possui a versão 6.8.1 instalada...";
+    } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        instr.innerText = "Cole o texto corrido da página de quartos, restaurantes ou eventos:";
+        txtArea.placeholder = "Jantar Dia dos Namorados\nAmbiente intimista...\nReserve\nPoa Bistro...";
+    }
+}
+
+function processar() {
+    if (currentMode === 'wp') {
+        formatarWP();
+    } else {
+        extrairNomes();
+    }
+}
+
+function formatarWP() {
+    const rawText = document.getElementById('inputText').value;
+    if (!rawText.trim()) return;
+
+    const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    let items = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        const regexVersao = /(?:possui a versão|version)\s+([\w\d\.-]+)\s+(?:instalada|installed)\.\s+(?:Atualize para versão|Update to version|version)\s+([\w\d\.-]+)/i;
+        let match = line.match(regexVersao);
+
+        if (match) {
+            let nome = "";
+            for (let j = i - 1; j >= 0; j--) {
+                if (!lines[j].toLowerCase().startsWith('selecionar') && !lines[j].toLowerCase().startsWith('compatibility') && !lines[j].toLowerCase().startsWith('compatibilidade')) {
+                    nome = lines[j];
+                    break;
+                }
+            }
+            if (!nome && i > 0) nome = lines[i-1]; 
+            if (nome && !items.some(item => item.nome === nome)) {
+                items.push({ nome, vA: match[1], vN: match[2] });
+            }
+        }
+    }
+
+    // Fallback simples
+    if (items.length === 0) {
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('versão') && lines[i].includes('instalada') && i > 0) {
+                const matchSimples = lines[i].match(/(?:versão|version)\s+([\w\d\.-]+)\s+.*?(?:versão|version)\s+([\w\d\.-]+)/i);
+                if (matchSimples) {
+                    let nome = lines[i-1].replace('Selecionar ', '');
+                    items.push({ nome, vA: matchSimples[1], vN: matchSimples[2] });
+                }
+            }
+        }
+    }
+
+    exibirResultado(items.map(item => `<strong>${item.nome}</strong> (da versão ${item.vA} para ${item.vN})`), true);
+}
+
+function extrairNomes() {
+    const rawText = document.getElementById('inputText').value;
+    if (!rawText.trim()) return;
+
+    // Lista de termos comuns que o script deve ignorar para não achar que são nomes de quartos/produtos
+    const termosIgnorar = [
+        'reserve', 'saiba mais', 'ver mais', 'conheça', 'aberto todos os dias', 'das ', 'a partir de', 
+        'site oficial', 'viva um dia', 'com um menu', 'ambiente', 'garanta sua', 'café da manhã', 
+        'brunch', 'todos os pavilhões', 'até as', 'pavilhão', 'centro de', 'gramado', 'anfiteatro', 'localizado no'
+    ];
+
+    // Quebra o texto por quebras de linha e limpa linhas em branco
+    const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    let nomesValidos = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Regras para ser considerado um título legítimo:
+        // 1. Não pode ser muito longo (títulos geralmente têm menos de 50 caracteres)
+        // 2. Não pode conter ou começar com termos comuns de descrição/botões
+        // 3. Não pode ser apenas números ou datas (ex: 08/06 ou 2026 isolado)
+        
+        let deveIgnorar = termosIgnorar.some(termo => line.toLowerCase().includes(termo));
+        let ehDataOuNumero = /^\d+[\/\d]*$/.test(line) || line.toLowerCase().startsWith('até ');
+
+        if (line.length < 55 && !deveIgnorar && !ehDataOuNumero) {
+            // Se a linha anterior estava vazia no texto original, ou se é a primeira linha, a chance de ser título é enorme
+            if (!nomesValidos.includes(line)) {
+                nomesValidos.push(line);
+            }
+        }
+    }
+
+    exibirResultado(nomesValidos, false);
+}
+
+function exibirResultado(lista, comNegrito) {
+    const outputDiv = document.getElementById('output');
+    const resultSection = document.getElementById('resultSection');
+    
+    if (lista.length > 0) {
+        let htmlResult = "<ul>";
+        lista.forEach(item => {
+            htmlResult += `<li>${item}</li>`;
+        });
+        htmlResult += "</ul>";
+        outputDiv.innerHTML = htmlResult;
+        resultSection.style.display = "block";
+    } else {
+        outputDiv.innerHTML = "<p style='color: #d63638; margin:0;'>Não foi possível identificar elementos com os padrões atuais.</p>";
+        resultSection.style.display = "block";
+    }
+}
+
+function copiarTexto() {
+    const listItems = document.querySelectorAll('#output li');
+    let outputText = "";
+    
+    listItems.forEach(li => {
+        const strong = li.querySelector('strong');
+        if (strong) {
+            const boldText = strong.innerText;
+            const normalText = li.innerText.replace(boldText, '').trim();
+            outputText += `* **${boldText}** ${normalText}\n`;
+        } else {
+            outputText += `* ${li.innerText}\n`;
+        }
+    });
+
+    navigator.clipboard.writeText(outputText).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.innerText = "Copiado!";
+        setTimeout(() => { btn.innerText = "Copiar Lista"; }, 2000);
+    });
+}
+</script>
+
+</body>
+</html>
